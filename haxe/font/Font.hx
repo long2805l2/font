@@ -83,7 +83,7 @@ class Font
 	public function hasChar (c)
 	{
 		return this.encoding.charToGlyphIndex(c) !== null;
-	};
+	}
 
 	// Convert the given character to a single glyph index.
 	// Note that this function assumes that there is a one-to-one mapping between
@@ -91,7 +91,7 @@ class Font
 	public function charToGlyphIndex (s)
 	{
 		return this.encoding.charToGlyphIndex(s);
-	};
+	}
 
 	// Convert the given character to a single Glyph object.
 	// Note that this function assumes that there is a one-to-one mapping between
@@ -101,12 +101,9 @@ class Font
 		var glyphIndex, glyph;
 		glyphIndex = this.charToGlyphIndex(c);
 		glyph = this.glyphs[glyphIndex];
-		if (!glyph)
-		{
-			glyph = this.glyphs[0]; // .notdef
-		}
+		if (glyph == null) glyph = this.glyphs[0]; // .notdef
 		return glyph;
-	};
+	}
 
 	// Convert the given text to a list of Glyph objects.
 	// Note that there is no strict one-to-one mapping between characters and
@@ -114,40 +111,28 @@ class Font
 	// length of the given string.
 	public function stringToGlyphs (s)
 	{
-		var i, c, glyphs;
-		glyphs = [];
-		for (i = 0; i < s.length; i += 1)
-		{
-			c = s[i];
-			glyphs.push(this.charToGlyph(c));
-		}
+		var glyphs = [for (c in s) this.charToGlyph(c)];
+		
 		return glyphs;
-	};
+	}
 
 	public function nameToGlyphIndex (name)
 	{
 		return this.glyphNames.nameToGlyphIndex(name);
-	};
+	}
 
 	public function nameToGlyph (name)
 	{
-		var glyphIndex, glyph;
-		glyphIndex = this.nametoGlyphIndex(name);
-		glyph = this.glyphs[glyphIndex];
-		if (!glyph) {
-			glyph = this.glyphs[0]; // .notdef
-		}
+		var glyphIndex = this.nametoGlyphIndex(name);
+		var glyph = this.glyphs[glyphIndex];
+		if (!glyph) glyph = this.glyphs[0]; // .notdef
 		return glyph;
-	};
+	}
 
 	public function glyphIndexToName (gid)
 	{
-		if (!this.glyphNames.glyphIndexToName)
-		{
-			return "";
-		}
 		return this.glyphNames.glyphIndexToName(gid);
-	};
+	}
 
 	// Retrieve the value of the kerning pair between the left glyph (or its index)
 	// and the right glyph (or its index). If no kerning pair is found, return 0.
@@ -158,44 +143,46 @@ class Font
 		leftGlyph = leftGlyph.index || leftGlyph;
 		rightGlyph = rightGlyph.index || rightGlyph;
 		var gposKerning = this.getGposKerningValue;
-		return gposKerning ? gposKerning(leftGlyph, rightGlyph) :
-			(this.kerningPairs[leftGlyph + "," + rightGlyph] || 0);
-	};
+		if (gposKerning != null)
+			return gposKerning(leftGlyph, rightGlyph) :
+		return this.kerningPairs[leftGlyph + "," + rightGlyph] || 0;
+	}
 
 	// Helper function that invokes the given callback for each glyph in the given text.
 	// The callback gets `(glyph, x, y, fontSize, options)`.
-	public function forEachGlyph (text, x, y, fontSize, options, callback)
+	public function forEachGlyph (text, ?x, ?y, ?fontSize, ?options, ?callback)
 	{
-		var kerning, fontScale, glyphs, i, glyph, kerningValue;
-		if (!this.supported)
+		if (!this.supported) return;
+		if (x == null) x = 0;
+		if (y == null) y = 0;
+		if (fontSize == null) fontSize = 72;
+		if (options == null) options = {};
+		
+		var kerning = true;
+		if (options.kerning != null)
+			kerning = options.kerning;
+		
+		var fontScale = 1 / this.unitsPerEm * fontSize;
+		var glyphs = this.stringToGlyphs (text);
+		
+		var kerningValue;
+		for (i in 0 ... glyphs.length)
 		{
-			return;
-		}
-		x = x !== undefined ? x : 0;
-		y = y !== undefined ? y : 0;
-		fontSize = fontSize !== undefined ? fontSize : 72;
-		options = options || {};
-		kerning = options.kerning === undefined ? true : options.kerning;
-		fontScale = 1 / this.unitsPerEm * fontSize;
-		glyphs = this.stringToGlyphs(text);
-
-		for (i = 0; i < glyphs.length; i += 1)
-		{
-			glyph = glyphs[i];
-			callback(glyph, x, y, fontSize, options);
+			var glyph = glyphs[i];
+			
+			if (callback != null)
+				callback (glyph, x, y, fontSize, options);
 
 			if (glyph.advanceWidth)
-			{
 				x += glyph.advanceWidth * fontScale;
-			}
 
 			if (kerning && i < glyphs.length - 1)
 			{
-				kerningValue = this.getKerningValue(glyph, glyphs[i + 1]);
+				kerningValue = this.getKerningValue (glyph, glyphs[i + 1]);
 				x += kerningValue * fontScale;
 			}
 		}
-	};
+	}
 
 	// Create a Path object that represents the given text.
 	//
@@ -210,13 +197,13 @@ class Font
 	public function getPath (text, x, y, fontSize, options)
 	{
 		var fullPath = new path.Path();
-		this.forEachGlyph(text, x, y, fontSize, options, function (glyph, x, y, fontSize)
+		this.forEachGlyph (text, x, y, fontSize, options, function (glyph, x, y, fontSize)
 		{
 			var path = glyph.getPath(x, y, fontSize);
 			fullPath.extend(path);
 		});
 		return fullPath;
-	};
+	}
 
 	// Draw the text on the given drawing context.
 	//
@@ -230,7 +217,7 @@ class Font
 	public function draw (ctx, text, x, y, fontSize, options)
 	{
 		this.getPath(text, x, y, fontSize, options).draw(ctx);
-	};
+	}
 
 	// Draw the points of all glyphs in the text.
 	// On-curve points will be drawn in blue, off-curve points will be drawn in red.
@@ -248,7 +235,7 @@ class Font
 		{
 			glyph.drawPoints(ctx, x, y, fontSize);
 		});
-	};
+	}
 
 	// Draw lines indicating important font measurements for all glyphs in the text.
 	// Black lines indicate the origin of the coordinate system (point 0,0).
@@ -268,7 +255,7 @@ class Font
 		{
 			glyph.drawMetrics(ctx, x, y, fontSize);
 		});
-	};
+	}
 
 	// Validate
 	public function validate ()
@@ -297,14 +284,14 @@ class Font
 
 		// Dimension information
 		assert(this.unitsPerEm > 0, "No unitsPerEm specified.");
-	};
+	}
 
 	// Convert the font object to a SFNT data structure.
 	// This structure contains all the necessary tables and metadata to create a binary OTF file.
 	public function toTables ()
 	{
 		return sfnt.fontToTable (this);
-	};
+	}
 
 	public function toBuffer ()
 	{
@@ -318,7 +305,7 @@ class Font
 			intArray[i] = bytes[i];
 		}
 		return buffer;
-	};
+	}
 
 	// Initiate a download of the OpenType font.
 	public function download ()
@@ -349,5 +336,5 @@ class Font
 		{
 			throw err;
 		});
-	};
+	}
 }
