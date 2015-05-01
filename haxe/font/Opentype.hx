@@ -1,6 +1,7 @@
 package font;
+import Encoding.CmapEncoding;
+import Encoding.GlyphNames;
 
-// var encoding = require('./encoding');
 // var _font = require('./font');
 // var glyph = require('./glyph');
 // var parse = require('./parse');
@@ -113,8 +114,8 @@ class OpenType
 			switch (tag)
 			{
 				case 'cmap':
-				font.tables.cmap = cmap.parse(data, offset);
-				font.encoding = new encoding.CmapEncoding(font.tables.cmap);
+				font.tables.cmap = cmap.parse (data, offset);
+				font.encoding = new CmapEncoding (font.tables.cmap);
 				if (!font.encoding)
 				{
 					font.supported = false;
@@ -148,7 +149,7 @@ class OpenType
 				
 				case 'post':
 				font.tables.post = post.parse(data, offset);
-				font.glyphNames = new encoding.GlyphNames(font.tables.post);
+				font.glyphNames = new GlyphNames(font.tables.post);
 				
 				case 'glyf':
 				glyfOffset = offset;
@@ -174,12 +175,12 @@ class OpenType
 			locaTable = loca.parse(data, locaOffset, numGlyphs, shortVersion);
 			font.glyphs = glyf.parse(data, glyfOffset, locaTable, font);
 			hmtx.parse(data, hmtxOffset, font.numberOfHMetrics, font.numGlyphs, font.glyphs);
-			encoding.addGlyphNames(font);
+			Encoding.addGlyphNames(font);
 		}
 		else if (cffOffset)
 		{
 			cff.parse(data, cffOffset, font);
-			encoding.addGlyphNames(font);
+			Encoding.addGlyphNames(font);
 		}
 		else
 		{
