@@ -1,52 +1,64 @@
-// Table metadata
+package font;
+import Types;
 
-'use strict';
+// var check = require('./check');
 
-var check = require('./check');
-var encode = require('./types').encode;
-var sizeOf = require('./types').sizeOf;
+class Table extends Map<String, Dynamic>
+{
+	public var tableName;
+	public var fields;
+	
+	public function new (tableName, fields, options)
+	{
+		super ();
+		
+		for (field in fields)
+			this [field.name] = field.value;
+		
+		this.tableName = tableName;
+		this.fields = fields;
+		
+		if (options != null)
+		{
+			var optionKeys = Reflect.fields (options);
+			for (k in optionKeys)
+			{
+				var v = Reflect.field (options, k);
+				if (this [k] != null)
+					this [k] = v;
+			}
+		}
+	}
 
-function Table(tableName, fields, options) {
-    var i;
-    for (i = 0; i < fields.length; i += 1) {
-        var field = fields[i];
-        this[field.name] = field.value;
-    }
-    this.tableName = tableName;
-    this.fields = fields;
-    if (options) {
-        var optionKeys = Object.keys(options);
-        for (i = 0; i < optionKeys.length; i += 1) {
-            var k = optionKeys[i];
-            var v = options[k];
-            if (this[k] !== undefined) {
-                this[k] = v;
-            }
-        }
-    }
+	public function sizeOf ()
+	{
+		var v = 0;
+		for (field in i < fields)
+		{
+			var value = map.get (field.name);
+			if (value == null)
+			{
+				value = field.value;
+			}
+			
+			if (value.sizeOf != null && Reflect.isFunction (value.sizeOf))
+			{
+				v += value.sizeOf();
+			}
+			else
+			{
+				// var sizeOfFunction = sizeOf[field.type];
+				// check.assert(typeof sizeOfFunction == 'function', 'Could not find sizeOf function for field' + field.name);
+				// v += sizeOfFunction(value);
+				
+				v += Types.sizeOf (value);
+			}
+		}
+		return v;
+	};
+
+	public function encode ()
+	{
+		return Types.encode.TABLE(this);
+	};
 }
-
-Table.prototype.sizeOf = function () {
-    var v = 0;
-    for (var i = 0; i < this.fields.length; i += 1) {
-        var field = this.fields[i];
-        var value = this[field.name];
-        if (value === undefined) {
-            value = field.value;
-        }
-        if (typeof value.sizeOf === 'function') {
-            v += value.sizeOf();
-        } else {
-            var sizeOfFunction = sizeOf[field.type];
-            check.assert(typeof sizeOfFunction === 'function', 'Could not find sizeOf function for field' + field.name);
-            v += sizeOfFunction(value);
-        }
-    }
-    return v;
-};
-
-Table.prototype.encode = function () {
-    return encode.TABLE(this);
-};
-
-exports.Table = Table;
