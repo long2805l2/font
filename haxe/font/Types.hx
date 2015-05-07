@@ -4,12 +4,12 @@ package font;
 
 class Types
 {
-	var LIMIT16 = 32768; // The limit at which a 16-bit number switches signs == 2^15
-	var LIMIT32 = 2147483648; // The limit at which a 32-bit number switches signs == 2 ^ 31
-
-	var decode = {};
-	var encode = {};
-	var sizeOf = {};
+	public static var LIMIT16 = 32768; // The limit at which a 16-bit number switches signs == 2^15
+	public static var LIMIT32 = 2147483648; // The limit at which a 32-bit number switches signs == 2 ^ 31
+    
+	public var decode = {};
+	public var encode = {};
+	public var sizeOf = {};
 
 	// Return a function that always returns the same value.
 	public static function constant (v)
@@ -94,18 +94,17 @@ class Encode
 
 
 	// FIXME Implement LONGDATETIME
-	public function LONGDATETIME () {
+	public function LONGDATETIME ():Array<Int>
+	{
 		return [0, 0, 0, 0, 0, 0, 0, 0];
-	};
+	}
 
 	// Convert a 4-char tag to a list of 4 bytes.
-	public function TAG (v) {
-		check.argument(v.length === 4, 'Tag should be exactly 4 ASCII characters.');
-		return [v.charCodeAt(0),
-				v.charCodeAt(1),
-				v.charCodeAt(2),
-				v.charCodeAt(3)];
-	};
+	public function TAG (v:String):Array<Int>
+	{
+		if (v.length > 4) return null;
+		return [v.charCodeAt (0), v.charCodeAt (1), v.charCodeAt (2), v.charCodeAt (3)];
+	}
 
 	public function FIXED = ULONG;
 
@@ -186,26 +185,29 @@ class Encode
 		offsets = [offset];
 		data = [];
 		dataSize = 0;
-		for (i = 0; i < l.length; i += 1) {
+		
+		for (i in 0 ... l.length)
+		{
 			v = encode.OBJECT(l[i]);
 			Array.prototype.push.apply(data, v);
 			dataSize += v.length;
 			offset += v.length;
-			offsets.push(offset);
+			offsets.push (offset);
 		}
 
-		if (data.length === 0) {
+		if (data.length === 0)
 			return [0, 0];
-		}
 
 		encodedOffsets = [];
 		offSize = (1 + Math.floor(Math.log(dataSize)/Math.log(2)) / 8) | 0;
 		offsetEncoder = [undefined, encode.BYTE, encode.USHORT, encode.UINT24, encode.ULONG][offSize];
-		for (i = 0; i < offsets.length; i += 1) {
-			encodedOffset = offsetEncoder(offsets[i]);
-			Array.prototype.push.apply(encodedOffsets, encodedOffset);
+		for (i in 0 ... offsets.length)
+		{
+			encodedOffset = offsetEncoder (offsets[i]);
+			Array.prototype.push.apply (encodedOffsets, encodedOffset);
 		}
-		return Array.prototype.concat(encode.Card16(l.length),
+		
+		return Array.prototype.concat(encode.Card16(l.length), 
 							   encode.OffSize(offSize),
 							   encodedOffsets,
 							   data);
@@ -214,12 +216,14 @@ class Encode
 	// Convert an object to a CFF DICT structure.
 	// The keys should be numeric.
 	// The values should be objects containing name / type / value.
-	encode.DICT (m) {
-		var d = [],
-			keys = Object.keys(m),
-			length = keys.length;
+	public static function DICT (m)
+	{
+		var d = [];
+		var keys = Object.keys(m);
+		var length = keys.length;
 
-		for (var i = 0; i < length; i += 1) {
+		for (i in 0 ... length)
+		{
 			// Object.keys() return string keys, but our keys are always numeric.
 			var k = parseInt(keys[i], 0);
 			var v = m[k];
@@ -231,7 +235,7 @@ class Encode
 		return d;
 	};
 
-	encode.OPERATOR (v) {
+	public static function OPERATOR (v) {
 		if (v < 1200) {
 			return [v];
 		} else {
@@ -239,7 +243,7 @@ class Encode
 		}
 	};
 
-	encode.OPERAND (v, type) {
+	public static function OPERAND (v, type) {
 		var d, i;
 		d = [];
 		if (Array.isArray(type)) {
@@ -262,12 +266,12 @@ class Encode
 		return d;
 	};
 
-	encode.OP = encode.BYTE;
+	public static function OP = BYTE;
 
 	// memoize charstring encoding using WeakMap if available
 	var wmm = typeof WeakMap === 'function' && new WeakMap();
 	// Convert a list of CharString operations to bytes.
-	encode.CHARSTRING (ops)
+	public static function CHARSTRING (ops)
 	{
 		if ( wmm && wmm.has( ops ) ) {
 			return wmm.get( ops );
@@ -293,7 +297,7 @@ class Encode
 	// Utility functions ////////////////////////////////////////////////////////
 
 	// Convert an object containing name / type / value to bytes.
-	encode.OBJECT (v) {
+	public static function OBJECT (v) {
 		var encodingFunction = encode[v.type];
 		check.argument(encodingFunction !== undefined, 'No encoding function for type ' + v.type);
 		return encodingFunction(v.value);
@@ -302,12 +306,11 @@ class Encode
 	// Convert a table object to bytes.
 	// A table contains a list of fields containing the metadata (name, type and default value).
 	// The table itself has the field values set as attributes.
-	encode.TABLE (table)
+	public static function TABLE (table)
 	{
-		var d = [],
-			length = table.fields.length,
-			i;
-
+		var d = [];
+		var length = table.fields.length;
+		
 		for (i = 0; i < length; i += 1) {
 			var field = table.fields[i];
 			var encodingFunction = encode[field.type];
@@ -323,7 +326,7 @@ class Encode
 	}
 
 	// Merge in a list of bytes.
-	encode.LITERAL (v)
+	public static function LITERAL (v)
 	{
 		return v;
 	}
