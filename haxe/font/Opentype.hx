@@ -38,7 +38,7 @@ class OpenType
 		return arrayBuffer;
 	}
 
-	public function loadFromFile(path, callback)
+	public function loadFromFile (path, callback)
 	{
 		var fs = require('fs');
 		fs.readFile(path, function (err, buffer)
