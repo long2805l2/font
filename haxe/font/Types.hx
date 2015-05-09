@@ -10,15 +10,7 @@ class Types
 	public var decode = {};
 	public var encode = {};
 	public var sizeOf = {};
-
-	// Return a function that always returns the same value.
-	public static function constant (v)
-	{
-		return function ()
-		{
-			return v;
-		};
-	}
+	
 }
 
 class Encode
